@@ -171,9 +171,22 @@ class IndexTTS:
         # print("filtered_latent", filtered_latent.shape)
         return filtered_latent
 
+    def count_english_words(text):
+        # 将文本按空格分割成单词列表
+        words = text.split()
+
+        # 过滤出只包含字母的单词（假设英文单词只包含字母）
+        english_words = [word for word in words if word.isalpha()]
+
+        # 返回英文单词的数量
+        return len(english_words)
+
     async def infer(self, audio_prompt: List[str], text, output_path=None, verbose=False, seed=None):
         print(">> start inference...")
         start_time = time.perf_counter()
+
+        word_count = self.count_english_words(text)
+        print(f"The number of English words in the article is: {word_count}")
 
         auto_conditioning = []
         for ap_ in audio_prompt:
@@ -254,6 +267,8 @@ class IndexTTS:
         print(f">> Total inference time: {end_time - start_time:.2f} seconds")
         print(f">> Generated audio length: {wav_length:.2f} seconds")
         print(f">> RTF: {(end_time - start_time) / wav_length:.4f}")
+
+        print(f">> WPM: { word_count / ((end_time - start_time)) / 60:.4f}")
 
         # save audio
         wav = wav.cpu()  # to cpu
