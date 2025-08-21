@@ -171,7 +171,7 @@ class IndexTTS:
         # print("filtered_latent", filtered_latent.shape)
         return filtered_latent
 
-    def count_english_words(text):
+    def count_english_words(self, text):
         # 将文本按空格分割成单词列表
         words = text.split()
 
