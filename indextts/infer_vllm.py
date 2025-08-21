@@ -268,7 +268,7 @@ class IndexTTS:
         print(f">> Generated audio length: {wav_length:.2f} seconds")
         print(f">> RTF: {(end_time - start_time) / wav_length:.4f}")
 
-        print(f">> WPM: { word_count / ((end_time - start_time)) / 60:.4f}")
+        print(f">> WPM: { word_count / ((end_time - start_time) / 60):.4f}")
 
         # save audio
         wav = wav.cpu()  # to cpu
