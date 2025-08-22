@@ -219,7 +219,8 @@ if __name__ == "__main__":
         urls=args.urls,
         data=test_data,
         concurrency=args.concurrency,
-        requests_per_thread=args.requests
+        requests_per_thread=args.requests,
+        test_type=args.test_type
     )
     
     print(f"开始压力测试，配置参数：")
