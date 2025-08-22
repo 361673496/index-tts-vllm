@@ -96,7 +96,7 @@ class TTSStressTester:
                 self.data["text"] = ", ".join([" ".join([number_words[random.randint(0, 9)] for _ in range(5)]) for _ in range(5)])
             elif self.test_type == 'cn':
                 self.data["text"] = self.generate_one_test_text()
-                self.input_length += len(self.data["text"])
+                self.text_length += len(self.data["text"])
             else:
                 print(f"' test_type error ':=^20")
                 return
