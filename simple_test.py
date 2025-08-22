@@ -203,7 +203,7 @@ if __name__ == "__main__":
                         default=['http://localhost:11996/tts'],  # , 'http://localhost:11997/tts'
                         help='TTS服务地址列表（多个用空格分隔）')
     parser.add_argument('--text', type=str, default='测试文本', help='需要合成的文本内容')
-    parser.add_argument('--character', type=str, default='lancy', help='合成角色名称')
+    parser.add_argument('--character', type=str, default='jay_klee', help='合成角色名称')
     parser.add_argument('--concurrency', type=int, default=16, help='并发线程数')
     parser.add_argument('--requests', type=int, default=5, help='每个线程的请求数')
     parser.add_argument('--test_type', type=str, default="digit", help='每个线程的请求数')
