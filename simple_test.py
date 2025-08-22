@@ -85,6 +85,7 @@ class TTSStressTester:
         
         print(f"\n{' 测试报告 ':=^40}")
         print(f"总请求时间: {total_time:.2f}秒")
+        print(f"WPM: {self.concurrency * self.requests_per_thread * 25 / total_time:.2f}秒")
         print(f"总请求量: {total_requests}")
         print(f"成功请求: {self.stats['success']}")
         print(f"失败请求: {self.stats['fail']}")
