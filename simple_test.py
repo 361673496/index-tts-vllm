@@ -60,12 +60,13 @@ sample_texts = [
 
 
 class TTSStressTester:
-    def __init__(self, urls, data, concurrency, requests_per_thread, test_type):
+    def __init__(self, urls, data, concurrency, requests_per_thread, test_type, interface):
         self.urls = urls
         self.data = data
         self.concurrency = concurrency
         self.requests_per_thread = requests_per_thread
         self.test_type = test_type # digit: 12345.., en: one two three..., cn: generate_test_texts
+        self.interface = interface  # tts or cosyvoice
         self.stats = {
             'total': 0,
             'success': 0,
@@ -85,23 +86,51 @@ class TTSStressTester:
             self.current_url_index = (self.current_url_index + 1) % len(self.urls)
         return url
 
+    def _build_request_data(self, text_content):
+        """根据接口类型构建请求数据"""
+        if self.interface == 'tts':
+            # 原有的tts接口格式
+            return {
+                "text": text_content,
+                "character": self.data.get("character", "jay_klee")
+            }
+        elif self.interface == 'cosyvoice':
+            # cosyvoice接口格式
+            return {
+                "text": text_content,
+                "mode": "zero_shot",
+                "prompt_audio_path": "/mnt/oss/甜美女孩-15s.mp3",
+                "prompt_text": "希望你以后能够做的比我还好呦。",
+                "speed": 1.0,
+                "stream": False,
+                "output_format": "wav",
+                "zero_shot_spk_id": "sweet_girl_15s",
+                "bit_rate": 192000,
+                "compression_level": 2
+            }
+        else:
+            raise ValueError(f"Unsupported interface type: {self.interface}")
+
     def _send_request(self):
         start_time = time.time()
         try:
             # 生成随机数字符串，确保不触发 vllm 的 cache
             if self.test_type == 'digit':
-                self.data["text"] = ",".join(["".join([str(random.randint(0, 9)) for _ in range(5)]) for _ in range(5)])
+                text_content = ",".join(["".join([str(random.randint(0, 9)) for _ in range(5)]) for _ in range(5)])
             elif self.test_type == 'en':
                 number_words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
-                self.data["text"] = ", ".join([" ".join([number_words[random.randint(0, 9)] for _ in range(5)]) for _ in range(5)])
+                text_content = ", ".join([" ".join([number_words[random.randint(0, 9)] for _ in range(5)]) for _ in range(5)])
             elif self.test_type == 'cn':
-                self.data["text"] = self.generate_one_test_text()
-                self.text_length += len(self.data["text"])
+                text_content = self.generate_one_test_text()
+                self.text_length += len(text_content)
             else:
                 print(f"' test_type error ':=^20")
                 return
+            
+            # 根据接口类型构建请求数据
+            request_data = self._build_request_data(text_content)
             target_url = self._get_next_url()  # 获取轮询后的URL
-            response = requests.post(target_url, json=self.data, timeout=10)
+            response = requests.post(target_url, json=request_data, timeout=10)
             elapsed = time.time() - start_time
             
             with self.lock:
@@ -148,6 +177,7 @@ class TTSStressTester:
         total_requests = self.stats['total']
         
         print(f"\n{' 测试报告 ':=^40}")
+        print(f"接口类型: {self.interface}")
         print(f"总请求时间: {total_time:.2f}秒")
         if self.test_type == 'en':
             print(f"WPS: {self.concurrency * self.requests_per_thread * 25 / total_time:.2f}秒")
@@ -206,7 +236,9 @@ if __name__ == "__main__":
     parser.add_argument('--character', type=str, default='jay_klee', help='合成角色名称')
     parser.add_argument('--concurrency', type=int, default=16, help='并发线程数')
     parser.add_argument('--requests', type=int, default=5, help='每个线程的请求数')
-    parser.add_argument('--test_type', type=str, default="digit", help='每个线程的请求数')
+    parser.add_argument('--test_type', type=str, default="digit", help='测试文本类型（digit/en/cn）')
+    parser.add_argument('--interface', type=str, default="tts", choices=['tts', 'cosyvoice'], 
+                        help='接口类型（tts/cosyvoice）')
     
     args = parser.parse_args()
     
@@ -220,10 +252,12 @@ if __name__ == "__main__":
         data=test_data,
         concurrency=args.concurrency,
         requests_per_thread=args.requests,
-        test_type=args.test_type
+        test_type=args.test_type,
+        interface=args.interface
     )
     
     print(f"开始压力测试，配置参数：")
+    print(f"接口类型: {args.interface}")
     print(f"目标服务: {', '.join(args.urls)}")
     print(f"并发线程: {args.concurrency}")
     print(f"单线程请求数: {args.requests}")
