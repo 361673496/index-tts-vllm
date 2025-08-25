@@ -98,7 +98,7 @@ class TTSStressTester:
                     print("========================\n")
             
             # 发送请求
-            response = requests.post(target_url, json=request_data, headers=headers, timeout=300)
+            response = requests.post(target_url, json=request_data, headers=headers, timeout=600)
             elapsed = time.time() - start_time
             
             with self.lock:
