@@ -73,7 +73,8 @@ class TTSStressTester:
             'fail': 0,
             'durations': [],
             'status_codes': defaultdict(int),
-            'errors': defaultdict(int)
+            'errors': defaultdict(int),
+            'error_details': []  # 记录详细错误信息
         }
         self.lock = threading.Lock()
         self.current_url_index = 0
@@ -144,14 +145,30 @@ class TTSStressTester:
                     else:
                         self.stats['fail'] += 1
                         self.stats['errors']['invalid_content_type'] += 1
+                        # 记录详细错误信息
+                        try:
+                            error_detail = f"HTTP {response.status_code} - Invalid Content-Type: {content_type} - Response: {response.text[:500]}"
+                            self.stats['error_details'].append(error_detail)
+                        except:
+                            pass
                 else:
                     self.stats['fail'] += 1
+                    # 记录详细错误信息
+                    try:
+                        error_detail = f"HTTP {response.status_code} - URL: {target_url} - Response: {response.text[:500]}"
+                        self.stats['error_details'].append(error_detail)
+                    except:
+                        error_detail = f"HTTP {response.status_code} - URL: {target_url} - Response: Unable to decode response"
+                        self.stats['error_details'].append(error_detail)
                     
         except Exception as e:
             with self.lock:
                 self.stats['fail'] += 1
                 self.stats['errors'][str(type(e).__name__)] += 1
                 self.stats['durations'].append(time.time() - start_time)
+                # 记录详细错误信息
+                error_detail = f"Exception: {type(e).__name__} - {str(e)} - URL: {target_url if 'target_url' in locals() else 'unknown'}"
+                self.stats['error_details'].append(error_detail)
 
     def _worker(self):
         for _ in range(self.requests_per_thread):
@@ -211,6 +228,14 @@ class TTSStressTester:
             print("\n错误统计:")
             for error, count in self.stats['errors'].items():
                 print(f"{error}: {count}次")
+
+        # 显示详细错误信息（最多显示前10个错误）
+        if self.stats['error_details']:
+            print(f"\n详细错误信息（显示前10个）:")
+            for i, error_detail in enumerate(self.stats['error_details'][:10]):
+                print(f"{i+1}. {error_detail}")
+            if len(self.stats['error_details']) > 10:
+                print(f"... 还有 {len(self.stats['error_details']) - 10} 个类似错误")
 
         print(f"\n吞吐量: {total_requests / total_time:.2f} 请求/秒")
 
