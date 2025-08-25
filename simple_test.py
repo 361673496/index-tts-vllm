@@ -69,10 +69,17 @@ class TTSStressTester:
         try:
             # 生成随机数字符串，确保不触发 vllm 的 cache
             if self.test_type == 'digit':
-                text_content = ",".join(["".join([str(random.randint(0, 9)) for _ in range(5)]) for _ in range(5)])
+                if self.text_source == 'normal':
+                    text_content = ",".join(["".join([str(random.randint(0, 9)) for _ in range(5)]) for _ in range(5)])
+                elif self.text_source == 'long':
+                    text_content = ",".join(["".join([str(random.randint(0, 9)) for _ in range(10)]) for _ in range(50)])
             elif self.test_type == 'en':
                 number_words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
-                text_content = ", ".join([" ".join([number_words[random.randint(0, 9)] for _ in range(5)]) for _ in range(5)])
+                if self.text_source == 'normal':
+                    text_content = ", ".join([" ".join([number_words[random.randint(0, 9)] for _ in range(5)]) for _ in range(5)])
+                elif self.text_source == 'long':
+                    text_content = ", ".join(
+                        [" ".join([number_words[random.randint(0, 9)] for _ in range(20)]) for _ in range(30)])
             elif self.test_type == 'cn':
                 text_content = self.generate_one_test_text()
                 self.text_length += len(text_content)
