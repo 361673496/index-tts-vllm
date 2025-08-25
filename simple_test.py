@@ -60,13 +60,14 @@ sample_texts = [
 
 
 class TTSStressTester:
-    def __init__(self, urls, data, concurrency, requests_per_thread, test_type, interface):
+    def __init__(self, urls, data, concurrency, requests_per_thread, test_type, interface, debug=False):
         self.urls = urls
         self.data = data
         self.concurrency = concurrency
         self.requests_per_thread = requests_per_thread
         self.test_type = test_type # digit: 12345.., en: one two three..., cn: generate_test_texts
         self.interface = interface  # tts or cosyvoice
+        self.debug = debug  # 调试模式
         self.stats = {
             'total': 0,
             'success': 0,
@@ -80,6 +81,7 @@ class TTSStressTester:
         self.current_url_index = 0
         self.url_lock = threading.Lock()  # 用于轮询URL的锁
         self.text_length = 0
+        self.request_count = 0  # 请求计数器
 
     def _get_next_url(self):
         with self.url_lock:
@@ -131,7 +133,22 @@ class TTSStressTester:
             # 根据接口类型构建请求数据
             request_data = self._build_request_data(text_content)
             target_url = self._get_next_url()  # 获取轮询后的URL
-            response = requests.post(target_url, json=request_data, timeout=10)
+            
+            # 设置请求头
+            headers = {'Content-Type': 'application/json'}
+            
+            # 调试信息：打印第一次请求的详细信息
+            with self.lock:
+                self.request_count += 1
+                if self.debug and self.request_count == 1:
+                    print(f"\n=== 第一次请求调试信息 ===")
+                    print(f"URL: {target_url}")
+                    print(f"Headers: {headers}")
+                    print(f"Request Data: {request_data}")
+                    print("========================\n")
+            
+            # 发送请求
+            response = requests.post(target_url, json=request_data, headers=headers, timeout=30)
             elapsed = time.time() - start_time
             
             with self.lock:
@@ -264,6 +281,8 @@ if __name__ == "__main__":
     parser.add_argument('--test_type', type=str, default="digit", help='测试文本类型（digit/en/cn）')
     parser.add_argument('--interface', type=str, default="tts", choices=['tts', 'cosyvoice'], 
                         help='接口类型（tts/cosyvoice）')
+    parser.add_argument('--debug', action='store_true', 
+                        help='启用调试模式，显示第一次请求的详细信息')
     
     args = parser.parse_args()
     
@@ -278,7 +297,8 @@ if __name__ == "__main__":
         concurrency=args.concurrency,
         requests_per_thread=args.requests,
         test_type=args.test_type,
-        interface=args.interface
+        interface=args.interface,
+        debug=args.debug
     )
     
     print(f"开始压力测试，配置参数：")
